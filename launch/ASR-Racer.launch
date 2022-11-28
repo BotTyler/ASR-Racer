@@ -1,6 +1,8 @@
 <launch>
 	<!--<include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" />-->
-	
-	<node pkg="unitysim" name="spawnbot" type="spawnrobot.py" output="screen"> </node>
+	<arg name='roboname' default='mRobot' doc='name of robot' />
+	<node pkg="asr_racer" name="spawnbot" type="spawnRobot.py" output="screen"> 
+		<param name='roboname' value="$(arg roboname)" />
+	</node>
 
 </launch>
