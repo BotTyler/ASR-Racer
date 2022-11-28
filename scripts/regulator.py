@@ -10,19 +10,24 @@ from std_msgs.msg import Float32
 import threading
 class simple_behavior:
 	def __init__(self):
-		for i in sys.argv:
-			print i +"\n"
-		if len(sys.argv) > 1:
-			self.topicname = sys.argv[1]
-		else:
-			self.topicname = "/robot0/cmd_vel"	
+		#for i in sys.argv:
+		#	print i +"\n"
+		#if len(sys.argv) > 1:
+		#	self.topicname = sys.argv[1]
+		#else:
+		#	self.topicname = "/robot0/cmd_vel"
+		robotName = rospy.get_param("~roboname")
+			
 		self.laserlock = threading.Lock()
-		self.pub = rospy.Publisher("/duclos/cmd_vel",Twist,queue_size=10)
-		self.sub = rospy.Subscriber("/duclos/speed",Float32,self.speedCallBack)
-		self.sub = rospy.Subscriber("/duclos/angular",Float32,self.angularCallBack)
-		self.sub = rospy.Subscriber("/duclos/scan",LaserScan,self.laserCallback)
-		self.data=None
 		rospy.init_node('laserThinker')
+
+		self.pub = rospy.Publisher("/" +robotName+"/cmd_vel",Twist,queue_size=10)
+		rospy.Subscriber("/"+robotName+"/speed",Float32,self.speedCallBack)
+		rospy.Subscriber("/"+robotName+"/angular",Float32,self.angularCallBack)
+		rospy.Subscriber("/"+robotName+"/scan",LaserScan,self.laserCallback)
+
+		self.data=None
+
 		self.rate = rospy.Rate(10) # 10hz WE KNOW TEN HZ!
 		self.ranges=[]
 		self.command = ""
@@ -32,6 +37,8 @@ class simple_behavior:
 		self.dataAngular =0.0
 		self.count = 0
 		self.initialac = 0
+
+
 	def speedCallBack(self,data):
 		
 		self.dataSpeed=data.data
