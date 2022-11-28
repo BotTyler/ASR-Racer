@@ -1,12 +1,6 @@
 <launch>
+	<!--<include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" />-->
 	
-	
-	
-	
+	<node pkg="unitysim" name="spawnbot" type="spawnrobot.py" output="screen"> </node>
 
-	<include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" />
-	
-	<node pkg="unitysim" name="spawnbot" type="spawnrobot.py" output="screen"> 
- </node>
- 
 </launch>
