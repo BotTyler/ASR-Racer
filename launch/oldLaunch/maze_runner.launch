@@ -5,6 +5,8 @@
 	<node pkg="asr_racer" name="spawnrobot" type="spawnRobot.py" output="screen">
 		<param name='roboname' value="$(arg roboname)" />
 	</node>
+	<node pkg="asr_racer" name="moveRobot" type="regulator.py" output="screen">
+	</node>
 <!--
 	<node pkg="maze_runner" name="stateTracker" type="stateTracker.py" output="screen"> 
 		<param name='roboname' value="$(arg roboname)" />

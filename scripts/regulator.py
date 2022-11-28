@@ -78,7 +78,21 @@ class simple_behavior:
 				
 				self.rate.sleep()
 				
-	
+	def pController(self, curOutput, expectedOutput, defaultScalar):
+		return 1-(curOutput/expectedOutput)+defaultScalar # its a start
+	def pdController(self, curOutput, expectedOutput, oldCur, oldExpected,dt, scale):
+		# ([1-(actual/desired)] + ([e(t)-e(t-1)])]/dt)+1)*input
+		p = 1 - (curOutput/expectedOutput)
+		et = p
+		etOld = 1 - (oldCur/oldExpected)
+		return (p +((et-etOld)/dt)+1)*scale # this is a start def wrong
+	def pdiController(self, timeWindow, etList, initialInput):
+		# i(t) = (1/timewindow)(**sum**[E(T)]+initialInput)
+		etSum = 0
+		for x in etList:
+			etSum += x
+		return (1/timewindow)(etSum+initialInput) # might be wrong have not tested it but a start
+		
 if __name__=='__main__':
 	temp = simple_behavior()
 	temp.mainloop()
