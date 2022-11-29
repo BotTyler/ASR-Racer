@@ -15,6 +15,8 @@ class sensorData:
 	def __init__(self, name):
 		self.roboName = name
 		self.hasData = False
+		self.speedData = False
+		self.angularData = False
 		rospy.Subscriber("/"+self.roboName+"/scan", LaserScan, self.callback)
 		rospy.Subscriber("/"+self.roboName+"/speed", Float32, self.speedCallback)
 		rospy.Subscriber("/"+self.roboName+"/angular", Float32, self.angularCallback)
@@ -25,9 +27,11 @@ class sensorData:
 
 	def speedCallback(self, data):
 		self.speedDataPack = data.data
+		self.speedData = True
 
 	def angularCallback(self, data):
 		self.angularDataPack = data.data
+		self.angularData = True
 
 	def getSensorData(self):
 		return self.dataPack.ranges
@@ -47,8 +51,13 @@ class sensorData:
 	def getRangeMax(self):
 		return self.dataPack.range_max
 
+	def getSpeed(self):
+		return self.speedDataPack
+	def getRotation(self):
+		return self.angularDataPack
+
 	def isDataAvail(self):
-		return self.hasData
+		return self.hasData and self.speedData and self.angularData
 	def
 	
 # class to calculate the next movement of the robot
