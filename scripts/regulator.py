@@ -70,8 +70,8 @@ class simple_behavior:
 					
 				#	move.linear.x = 10 * (1+self.count)
 				#else:
-				move.linear.x = 10 * (1+self.count)
-				move.angular.z = 0
+				move.linear.x = 0
+				move.angular.z = 1
 				
 				self.pub.publish(move)
 				

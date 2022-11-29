@@ -1,11 +1,18 @@
 <launch>
 	<!--<include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" />-->
 	<arg name='roboname' default='mRobot' doc='name of robot' />
+	<arg name='lasername' default='scan' doc='name of laserScan' />
 	<node pkg="asr_racer" name="spawnbot" type="spawnRobot.py" output="screen"> 
 		<param name='roboname' value="$(arg roboname)" />
 	</node>
+
 	<node pkg="asr_racer" name="movement" type="regulator.py" output="screen"> 
 		<param name='roboname' value="$(arg roboname)" />
 	</node>
 
+<!--
+	<node pkg="asr_racer" name="openPath" type="mostOpenPath.py" output="screen"> 
+		<param name='roboname' value="$(arg roboname)" />
+		<param name='lasername' value="$(arg lasername)" />
+	</node>-->
 </launch>
