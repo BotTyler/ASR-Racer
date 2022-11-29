@@ -56,6 +56,7 @@ class mazeFinderState:
 	def __init__(self, name):
 		self.roboName = name
 		self.sensorDataObj = sensorData(self.roboName)
+		self.oError = 0.0
 
 	def calcOpenForce(self, num, theta):
 		rawHorz = math.sin(theta) * num
@@ -114,11 +115,19 @@ class mazeFinderState:
 		if minVert <= .04:
 			vertMovement = 0
 			#horzMoveToOpen = self.clamp(horzMoveToOpen*1000, -1,1)
+
+		dt = .1 # 10 hz
 			
+		acutalSpeed = sensor.getSpeed() # change get name
+		theoreticalSpeed = vertMovement
+		pdValueVert = pdController(actualSpeed, theoreticalSpeed, dt, theoreticalSpeed)
+		rTwist.linear.x = pdValueVert
 
-		rTwist.linear.x = vertMovement*mSpeed
-
-		rTwist.angular.z = horzMoveToOpen * mSpeed
+		
+		actualRotation = sensor.getRotation() # change get name
+		theoreticalRotation = horzMoveToOpen
+		pdValueHorz = pd.Controller(actualRotation, theoreticalRotation, dt, theoreticalRotation)
+		rTwist.angular.z = pdValueHorz
 		return rTwist
 
 
@@ -137,14 +146,14 @@ class mazeFinderState:
 
 
 
-	def pdController(self, actual, theoretical, oActual, oTheoretical, dt, mInput):
+	def pdController(self, actual, theoretical, dt, mInput):
 		# ([1-(actual/desired)] + ([e(t)-e(t-1)])]/dt)+1)*input
 		p = self.calcP(actual, theoretical)
 		et = self.calcE(actual, theoretical)
-		oet = self.calcE(oActual, oTheoretical)
-		changeEt = (et-oet)/dt
+		changeEt = (et-self.oError)/dt
+		self.oError = et # replace oError with the new error for next calculation
 		return (p + changeEt + 1)*mInput
-		return 
+#ERROR
 	def calcP(self, actual, exp):
 		return 1-(actual/exp)
 	def calcE(cur, exp):
