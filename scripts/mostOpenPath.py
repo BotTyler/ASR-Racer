@@ -24,10 +24,10 @@ class sensorData:
 		self.hasData = True
 
 	def speedCallback(self, data):
-		pass
+		self.speedDataPack = data.data
 
 	def angularCallback(self, data):
-		pass
+		self.angularDataPack = data.data
 
 	def getSensorData(self):
 		return self.dataPack.ranges
@@ -49,6 +49,7 @@ class sensorData:
 
 	def isDataAvail(self):
 		return self.hasData
+	def
 	
 # class to calculate the next movement of the robot
 class mazeFinderState:
