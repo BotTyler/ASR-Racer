@@ -16,10 +16,11 @@ class simple_behavior:
 		#	self.topicname = sys.argv[1]
 		#else:
 		#	self.topicname = "/robot0/cmd_vel"
+		rospy.init_node('laserThinker')
 		robotName = rospy.get_param("~roboname")
 			
 		self.laserlock = threading.Lock()
-		rospy.init_node('laserThinker')
+
 
 		self.pub = rospy.Publisher("/" +robotName+"/cmd_vel",Twist,queue_size=10)
 		rospy.Subscriber("/"+robotName+"/speed",Float32,self.speedCallBack)
@@ -55,31 +56,22 @@ class simple_behavior:
 		#What I have not figured out is how the acceleration interacts with a twist value. For example if if you run the code as it is setup right now after waiting enough time a linear x of 0 will eventually cause the robot to slowly move backward (or atleast it should having tested it multiple times) The robot requires some sort of input to start automoving / turning at all. 
 		while not rospy.is_shutdown():
 				#counter to represent time
-				self.count += .1
+				dt = .1
+				self.count += dt
 				#acceleration formula over a period of .1 seconds or 10 hz
-				self.acceleration = (self.dataSpeed - 0.0)/.1
-				if self.count == .1:
-					#saves inital accleration for rate over time
-					self.initialac = self.acceleration
-				print(str(self.acceleration) + "acceleration")
-				#jerk formula or the rate of change of acceleration of .1 seconds
-				self.jerk = (self.acceleration -self.initialac)/.1
-				print(str(self.jerk) + "jerk or acceleration rate of change")
 				
 				move = Twist()
-				
-
 				# I started trying to setup some PID formulas but I didnt want to do calculus at 1 am
 				#self.E(t) = 1 -(self.dataSpeed/.1)
 				#self.Ed(t) = self.E(t) - self
 				#self.p(t) = 1 - (self.dataSpeed/.1)
 				#self.pd(t) = (self.p(t) + () + 1 ) * .5
-				if self.dataSpeed == 0.0:
+				#if self.dataSpeed == 0.0:
 					
-					move.linear.x = .1
-				else:
-					move.linear.x = 0
-					move.angular.z = 0
+				#	move.linear.x = 10 * (1+self.count)
+				#else:
+				move.linear.x = 10 * (1+self.count)
+				move.angular.z = 0
 				
 				self.pub.publish(move)
 				
