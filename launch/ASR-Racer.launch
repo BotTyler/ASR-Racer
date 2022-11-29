@@ -6,13 +6,13 @@
 		<param name='roboname' value="$(arg roboname)" />
 	</node>
 
-	<node pkg="asr_racer" name="movement" type="regulator.py" output="screen"> 
+	<!--<node pkg="asr_racer" name="movement" type="regulator.py" output="screen"> 
 		<param name='roboname' value="$(arg roboname)" />
-	</node>
+	</node>-->
 
-<!--
+
 	<node pkg="asr_racer" name="openPath" type="mostOpenPath.py" output="screen"> 
 		<param name='roboname' value="$(arg roboname)" />
 		<param name='lasername' value="$(arg lasername)" />
-	</node>-->
+	</node>
 </launch>

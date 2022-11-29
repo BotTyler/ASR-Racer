@@ -53,12 +53,12 @@ class sensorData:
 
 	def getSpeed(self):
 		return self.speedDataPack
+
 	def getRotation(self):
 		return self.angularDataPack
 
 	def isDataAvail(self):
 		return self.hasData and self.speedData and self.angularData
-	def
 	
 # class to calculate the next movement of the robot
 class mazeFinderState:
@@ -66,12 +66,13 @@ class mazeFinderState:
 	def __init__(self, name):
 		self.roboName = name
 		self.sensorDataObj = sensorData(self.roboName)
-		self.oError = 0.0
-
+		self.oErrorVert = 0.0
+		self.oErrorHorz = 0.0
+		self.oRotation = 0.0
 	def calcOpenForce(self, num, theta):
 		rawHorz = math.sin(theta) * num
 		scaledHorz = math.sin(.5 * math.pi * rawHorz)
-		return scaledHorz
+		return rawHorz
 		
 	def calcVert(self, num, theta):
 		rawVert = math.cos(theta) * num
@@ -122,22 +123,28 @@ class mazeFinderState:
 		minVert = min(myRanges[lowerVert:upperVert+1])/rangeMax # / to get between 0 and 1
 
 
-		if minVert <= .04:
-			vertMovement = 0
+		#if minVert <= .04:
+			#vertMovement = 0
 			#horzMoveToOpen = self.clamp(horzMoveToOpen*1000, -1,1)
 
 		dt = .1 # 10 hz
 			
-		acutalSpeed = sensor.getSpeed() # change get name
+		actualSpeed = self.sensorDataObj.getSpeed() # change get name
 		theoreticalSpeed = vertMovement
-		pdValueVert = pdController(actualSpeed, theoreticalSpeed, dt, theoreticalSpeed)
-		rTwist.linear.x = pdValueVert
+		pdValueVert = self.pdCalcVert(actualSpeed, theoreticalSpeed, dt, mSpeed)
+		rTwist.linear.x = pdValueVert/dt
+		temp = Twist()
+		temp.linear.x = vertMovement
+		temp.angular.z = horzMoveToOpen
+		print(temp)
 
+
+		#rTwist.linear.x = vertMovement * mSpeed
 		
-		actualRotation = sensor.getRotation() # change get name
-		theoreticalRotation = horzMoveToOpen
-		pdValueHorz = pd.Controller(actualRotation, theoreticalRotation, dt, theoreticalRotation)
-		rTwist.angular.z = pdValueHorz
+		actualRotation = self.sensorDataObj.getRotation() # change get name
+		theoreticalRotation = horzMoveToOpen/dt
+		pdValueHorz = self.pdCalcHorz(actualRotation, theoreticalRotation, dt, mSpeed)
+		rTwist.angular.z = pdValueHorz/dt
 		return rTwist
 
 
@@ -156,17 +163,26 @@ class mazeFinderState:
 
 
 
-	def pdController(self, actual, theoretical, dt, mInput):
+	def pdCalcHorz(self, actual, theoretical, dt, mInput):
 		# ([1-(actual/desired)] + ([e(t)-e(t-1)])]/dt)+1)*input
 		p = self.calcP(actual, theoretical)
 		et = self.calcE(actual, theoretical)
-		changeEt = (et-self.oError)/dt
-		self.oError = et # replace oError with the new error for next calculation
+		changeEt = (et-self.oErrorHorz)/dt
+		self.oErrorHorz = et # replace oError with the new error for next calculation
 		return (p + changeEt + 1)*mInput
-#ERROR
+
+	def pdCalcVert(self, actual, theoretical, dt, mInput):
+		# ([1-(actual/desired)] + ([e(t)-e(t-1)])]/dt)+1)*input
+		p = self.calcP(actual, theoretical)
+		et = self.calcE(actual, theoretical)
+		changeEt = (et-self.oErrorVert)/dt
+		changeEt = et/dt
+		self.oErrorVert = et # replace oError with the new error for next calculation
+		return (p + changeEt + 1)*mInput
+
 	def calcP(self, actual, exp):
 		return 1-(actual/exp)
-	def calcE(cur, exp):
+	def calcE(self, cur, exp):
 		return 1-(cur/exp)
 
 
