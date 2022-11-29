@@ -8,17 +8,26 @@ from enum import Enum
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import LaserScan
 from std_msgs.msg import Int32
+from std_msgs.msg import Float32
 
 # Class to get and store sensor data
 class sensorData:
-	def __init__(self, name, laserName):
+	def __init__(self, name):
 		self.roboName = name
 		self.hasData = False
-		rospy.Subscriber("/"+self.roboName+"/"+laserName, LaserScan, self.callback)
+		rospy.Subscriber("/"+self.roboName+"/scan", LaserScan, self.callback)
+		rospy.Subscriber("/"+self.roboName+"/speed", Float32, self.speedCallback)
+		rospy.Subscriber("/"+self.roboName+"/angular", Float32, self.angularCallback)
 
 	def callback(self, data):
 		self.dataPack = data
 		self.hasData = True
+
+	def speedCallback(self, data):
+		pass
+
+	def angularCallback(self, data):
+		pass
 
 	def getSensorData(self):
 		return self.dataPack.ranges
@@ -44,10 +53,9 @@ class sensorData:
 # class to calculate the next movement of the robot
 class mazeFinderState:
 
-	def __init__(self, name, laser):
+	def __init__(self, name):
 		self.roboName = name
-		self.laserName = laser
-		self.sensorDataObj = sensorData(self.roboName, self.laserName)
+		self.sensorDataObj = sensorData(self.roboName)
 
 	def calcOpenForce(self, num, theta):
 		rawHorz = math.sin(theta) * num
@@ -129,28 +137,39 @@ class mazeFinderState:
 
 
 
+	def pdController(self, actual, theoretical, oActual, oTheoretical, dt, mInput):
+		# ([1-(actual/desired)] + ([e(t)-e(t-1)])]/dt)+1)*input
+		p = self.calcP(actual, theoretical)
+		et = self.calcE(actual, theoretical)
+		oet = self.calcE(oActual, oTheoretical)
+		changeEt = (et-oet)/dt
+		return (p + changeEt + 1)*mInput
+		return 
+	def calcP(self, actual, exp):
+		return 1-(actual/exp)
+	def calcE(cur, exp):
+		return 1-(cur/exp)
+
+
+
 # class that handles the movement functions
 class mazeFinderController:
 
-	def __init__(self, name, laser):
+	def __init__(self, name):
 		self.roboName = name
-		self.laserName = laser
+
 
 		
 		self.pub = rospy.Publisher("/"+str(name)+"/cmd_vel", Twist, queue_size = 10)
-		rospy.Subscriber("/"+name+"/mostOpenPath",Int32, self.mostOpenPathCallback)
 		self.rate = rospy.Rate(10)
-		self.mazeFinderStateObj = mazeFinderState(name, laser)
-		self.isActive = True
+		self.mazeFinderStateObj = mazeFinderState(name)
 
-	def mostOpenPathCallback(self, data):
-		self.isActive = data == Int32(1)
 
 	def run(self):
 		while not rospy.is_shutdown():
-			if self.isActive:
-				movementTwist = self.mazeFinderStateObj.determineMovement()
-				self.pub.publish(movementTwist)	
+
+			movementTwist = self.mazeFinderStateObj.determineMovement()
+			self.pub.publish(movementTwist)	
 			self.rate.sleep()
 			
 
@@ -158,9 +177,9 @@ class mazeFinderController:
 if __name__ == '__main__':
 	rospy.init_node("Controller", anonymous=True)
 	robotName = rospy.get_param("~roboname")
-	laserName = rospy.get_param("~lasername")
+
 	try:
-		mazeFinderObj = mazeFinderController(robotName, laserName)
+		mazeFinderObj = mazeFinderController(robotName)
 		mazeFinderObj.run()
 	except rospy.ROSInterruptException:
 		print("ERROR: something happened")
