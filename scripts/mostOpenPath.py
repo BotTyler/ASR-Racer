@@ -66,9 +66,9 @@ class mazeFinderState:
 	def __init__(self, name):
 		self.roboName = name
 		self.sensorDataObj = sensorData(self.roboName)
-		self.oErrorVert = 0.0
-		self.oErrorHorz = 0.0
-		self.oRotation = 0.0
+		self.vertPID = PID()
+		self.horzPID = PID()
+
 	def calcOpenForce(self, num, theta):
 		rawHorz = math.sin(theta) * num
 		scaledHorz = math.sin(.5 * math.pi * rawHorz)
@@ -119,22 +119,21 @@ class mazeFinderState:
 		
 		rTwist = Twist()
 
-
-		minVert = min(myRanges[lowerVert:upperVert+1])/rangeMax # / to get between 0 and 1
-
-
-		#if minVert <= .04:
-			#vertMovement = 0
-			#horzMoveToOpen = self.clamp(horzMoveToOpen*1000, -1,1)
+		
 
 		dt = .1 # 10 hz
-			
+		self.vertPID = PID()
+		self.horzPID = PID()
+
 		actualSpeed = self.sensorDataObj.getSpeed() # change get name
 		theoreticalSpeed = vertMovement
-		pdValueVert = self.pdCalcVert(actualSpeed, theoreticalSpeed, dt, mSpeed)
-		rTwist.linear.x = pdValueVert/dt
+		vertMovement = self.vertPID.calc(actualSpeed, theoreticalSpeed)
+
+		rTwist.linear.x = vertMovement
+
+
 		temp = Twist()
-		temp.linear.x = vertMovement
+		temp.linear.x = theoreticalSpeed
 		temp.angular.z = horzMoveToOpen
 		print(temp)
 
@@ -142,9 +141,9 @@ class mazeFinderState:
 		#rTwist.linear.x = vertMovement * mSpeed
 		
 		actualRotation = self.sensorDataObj.getRotation() # change get name
-		theoreticalRotation = horzMoveToOpen/dt
-		pdValueHorz = self.pdCalcHorz(actualRotation, theoreticalRotation, dt, mSpeed)
-		rTwist.angular.z = pdValueHorz/dt
+		theoreticalRotation = horzMoveToOpen
+		horzMovement = self.horzPID.calc(actualRotation, theoreticalRotation)
+		rTwist.angular.z = horzMovement
 		return rTwist
 
 
@@ -157,36 +156,43 @@ class mazeFinderState:
 			mTwist = self.calcTwist(sensorRanges, len(sensorRanges))
 		return mTwist
 
-	def clamp(self, n, minn, maxn):
-		return max(min(maxn, n), minn)
 
 
+class PID:
+	def __init__(self):
+		self.integrator = 0.0
+		self.prevError = 0.0
+		self.differentiator = 0.0
+		self.prevMeasurement = 0.0
+		self.out = 0.0
+		self.Ki = 1
+		self.limMaxInt = 2
+		self.limMinInt = -self.limMaxInt
+		self.T = .1
 
+	def calc(self, actual, expected):
+		p = self.calcError(actual, expected)
+		integral = self.calcIntegral(p)
+		derivative = self.calcDerivative(p)
+		self.prevError = p
+		return (p + integral + derivative) * 1
 
-	def pdCalcHorz(self, actual, theoretical, dt, mInput):
-		# ([1-(actual/desired)] + ([e(t)-e(t-1)])]/dt)+1)*input
-		p = self.calcP(actual, theoretical)
-		et = self.calcE(actual, theoretical)
-		changeEt = (et-self.oErrorHorz)/dt
-		self.oErrorHorz = et # replace oError with the new error for next calculation
-		return (p + changeEt + 1)*mInput
+	def calcIntegral(self, error):
+		self.integrator = self.integrator + .5 * self.Ki * self.T * (error + self.prevError)
 
-	def pdCalcVert(self, actual, theoretical, dt, mInput):
-		# ([1-(actual/desired)] + ([e(t)-e(t-1)])]/dt)+1)*input
-		p = self.calcP(actual, theoretical)
-		et = self.calcE(actual, theoretical)
-		changeEt = (et-self.oErrorVert)/dt
-		changeEt = et/dt
-		self.oErrorVert = et # replace oError with the new error for next calculation
-		return (p + changeEt + 1)*mInput
+		if self.integrator > self.limMaxInt:
+			self.integrator = self.limMaxInt
+		elif self.integrator < self.limMinInt:
+			self.integrator = self.limMinInt
+		return self.integrator
 
-	def calcP(self, actual, exp):
-		return 1-(actual/exp)
-	def calcE(self, cur, exp):
-		return 1-(cur/exp)
+	def calcError(self, actual, expected):
+		return expected - actual
 
-
-
+	def calcDerivative(self, curError):
+		# x = ((change in error)/(change in time))
+		changeError = curError - self.prevError
+		return changeError/self.T
 # class that handles the movement functions
 class mazeFinderController:
 
