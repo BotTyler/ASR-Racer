@@ -72,11 +72,11 @@ class mazeFinderState:
 	def calcOpenForce(self, num, theta):
 		rawHorz = math.sin(theta) * num
 		scaledHorz = math.sin(.5 * math.pi * rawHorz)
-		return rawHorz
+		return rawHorz * rawHorz
 		
 	def calcVert(self, num, theta):
 		rawVert = math.cos(theta) * num
-		scaledVert = rawVert
+		scaledVert = rawVert * rawVert
 		return scaledVert
 
 	def calcTwist(self, myRanges, lenRanges):
@@ -87,16 +87,8 @@ class mazeFinderState:
 		rangeMax = self.sensorDataObj.getRangeMax()
 
 		# set basic variables
-		horzSum = 0
-		vertSum = 0
 		counter = 0
 
-		length = len(myRanges)
-		forwardRange = length/3
-		partialForwardRange = forwardRange/2
-		middle = length/2
-		upperVert = middle + partialForwardRange
-		lowerVert = middle - partialForwardRange
 		vertMovement = 0
 		horzMoveToOpen = 0
 
@@ -115,35 +107,28 @@ class mazeFinderState:
 			counter += 1
 		vertMovement /= len(myRanges)
 		horzMoveToOpen /= len(myRanges)
-
+		#temp = Twist()
+		#temp.linear.x = vertMovement
+		#temp.angular.z = horzMoveToOpen
+		#print(temp)
 		
 		rTwist = Twist()
 
 		
 
-		dt = .1 # 10 hz
-		self.vertPID = PID()
-		self.horzPID = PID()
-
-		actualSpeed = self.sensorDataObj.getSpeed() # change get name
+		actualSpeed = self.sensorDataObj.getSpeed()
 		theoreticalSpeed = vertMovement
-		vertMovement = self.vertPID.calc(actualSpeed, theoreticalSpeed)
-
-		rTwist.linear.x = vertMovement
-
-
-		temp = Twist()
-		temp.linear.x = theoreticalSpeed
-		temp.angular.z = horzMoveToOpen
-		print(temp)
+		vMove = self.vertPID.calc(actualSpeed, 3)
+		#print(vMove*actualSpeed)
+		rTwist.linear.x = vMove
 
 
 		#rTwist.linear.x = vertMovement * mSpeed
 		
-		actualRotation = self.sensorDataObj.getRotation() # change get name
+		actualRotation = self.sensorDataObj.getRotation()
 		theoreticalRotation = horzMoveToOpen
-		horzMovement = self.horzPID.calc(actualRotation, theoreticalRotation)
-		rTwist.angular.z = horzMovement
+		hMove = self.horzPID.calc(actualRotation, theoreticalRotation)
+		rTwist.angular.z = hMove
 		return rTwist
 
 
@@ -163,7 +148,6 @@ class PID:
 		self.integrator = 0.0
 		self.prevError = 0.0
 		self.differentiator = 0.0
-		self.prevMeasurement = 0.0
 		self.out = 0.0
 		self.Ki = 1
 		self.limMaxInt = 2
@@ -171,13 +155,33 @@ class PID:
 		self.T = .1
 
 	def calc(self, actual, expected):
-		p = self.calcError(actual, expected)
-		integral = self.calcIntegral(p)
-		derivative = self.calcDerivative(p)
-		self.prevError = p
-		return (p + integral + derivative) * 1
+		error = self.calcError(actual, expected)
+		p = self.calcP(actual,expected)
+		der = self.calcDer(error)
+		#integral = self.calcIntegral(p)
+		#derivative = self.calcDerivative(p)
+		
 
-	def calcIntegral(self, error):
+		
+		self.prevError = error
+
+		out = p + der
+
+		#if out > self.limMaxInt:
+			#out = self.limMaxInt
+		#elif out < self.limMinInt:
+			#out = self.limMinInt
+		return out
+
+
+	def calcError(self, actual, expected):
+		return 1-(actual/expected)
+	def calcP(self, actual, expected):
+		return 1-(actual/expected)+1
+	def calcDer(self, error):
+		return (error - self.prevError)/self.T
+
+	def acalcIntegral(self, error):
 		self.integrator = self.integrator + .5 * self.Ki * self.T * (error + self.prevError)
 
 		if self.integrator > self.limMaxInt:
@@ -186,10 +190,10 @@ class PID:
 			self.integrator = self.limMinInt
 		return self.integrator
 
-	def calcError(self, actual, expected):
+	def acalcError(self, actual, expected):
 		return expected - actual
 
-	def calcDerivative(self, curError):
+	def acalcDerivative(self, curError):
 		# x = ((change in error)/(change in time))
 		changeError = curError - self.prevError
 		return changeError/self.T
