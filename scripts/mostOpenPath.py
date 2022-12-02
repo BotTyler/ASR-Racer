@@ -98,6 +98,8 @@ class mazeFinderState:
 			curRange = x
 			if math.isinf(curRange):
 				curRange = rangeMax
+			if curRange > 40:
+				continue
 			theta = counter * angleIncrement + angleMin
 			curRange /= rangeMax
 			vertMovement += self.calcVert(curRange, theta) # Forward Vector
@@ -128,7 +130,7 @@ class mazeFinderState:
 		actualRotation = self.sensorDataObj.getRotation()
 		theoreticalRotation = horzMoveToOpen
 		hMove = self.horzPID.calc(actualRotation, theoreticalRotation)
-		rTwist.angular.z = hMove
+		rTwist.angular.z = -hMove * 2
 		return rTwist
 
 
@@ -150,27 +152,32 @@ class PID:
 		self.differentiator = 0.0
 		self.out = 0.0
 		self.Ki = 1
-		self.limMaxInt = 2
+		self.limMaxInt = 5
 		self.limMinInt = -self.limMaxInt
 		self.T = .1
 
 	def calc(self, actual, expected):
+		'''
 		error = self.calcError(actual, expected)
 		p = self.calcP(actual,expected)
 		der = self.calcDer(error)
 		#integral = self.calcIntegral(p)
 		#derivative = self.calcDerivative(p)
+		'''
+		p = self.acalcError(actual, expected)
+		der = self.acalcDerivative(p)
+		integral = self.acalcIntegral(p)
 		
 
 		
-		self.prevError = error
+		self.prevError = p
 
-		out = p + der
+		out = p*5 + der * 5 + integral * 2
 
-		#if out > self.limMaxInt:
-			#out = self.limMaxInt
-		#elif out < self.limMinInt:
-			#out = self.limMinInt
+		if out > self.limMaxInt:
+			out = self.limMaxInt
+		elif out < self.limMinInt:
+			out = self.limMinInt
 		return out
 
 
