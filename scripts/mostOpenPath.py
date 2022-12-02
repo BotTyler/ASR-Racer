@@ -66,8 +66,8 @@ class mazeFinderState:
 	def __init__(self, name):
 		self.roboName = name
 		self.sensorDataObj = sensorData(self.roboName)
-		self.vertPID = PID()
-		self.horzPID = PID()
+		self.vertPID = PID(.1,0,0)
+		self.horzPID = PID(.1,.1,.3)
 
 	def calcOpenForce(self, num, theta):
 		rawHorz = math.sin(theta) * num
@@ -109,10 +109,10 @@ class mazeFinderState:
 			counter += 1
 		vertMovement /= len(myRanges)
 		horzMoveToOpen /= len(myRanges)
-		#temp = Twist()
-		#temp.linear.x = vertMovement
-		#temp.angular.z = horzMoveToOpen
-		#print(temp)
+		temp = Twist()
+		temp.linear.x = vertMovement
+		temp.angular.z = horzMoveToOpen
+		print(temp)
 		
 		rTwist = Twist()
 
@@ -122,7 +122,7 @@ class mazeFinderState:
 		theoreticalSpeed = vertMovement
 		vMove = self.vertPID.calc(actualSpeed, 3)
 		#print(vMove*actualSpeed)
-		rTwist.linear.x = vMove
+		#rTwist.linear.x = vMove
 
 
 		#rTwist.linear.x = vertMovement * mSpeed
@@ -130,7 +130,7 @@ class mazeFinderState:
 		actualRotation = self.sensorDataObj.getRotation()
 		theoreticalRotation = horzMoveToOpen
 		hMove = self.horzPID.calc(actualRotation, theoreticalRotation)
-		rTwist.angular.z = -hMove * 2
+		rTwist.angular.z = hMove
 		return rTwist
 
 
@@ -146,7 +146,7 @@ class mazeFinderState:
 
 
 class PID:
-	def __init__(self):
+	def __init__(self, kp, ki, kd):
 		self.integrator = 0.0
 		self.prevError = 0.0
 		self.differentiator = 0.0
@@ -155,6 +155,9 @@ class PID:
 		self.limMaxInt = 5
 		self.limMinInt = -self.limMaxInt
 		self.T = .1
+		self.kp = kp
+		self.kd = kd
+		self.ki = ki
 
 	def calc(self, actual, expected):
 		'''
@@ -164,6 +167,7 @@ class PID:
 		#integral = self.calcIntegral(p)
 		#derivative = self.calcDerivative(p)
 		'''
+		#p = self.calcP(actual,expected)
 		p = self.acalcError(actual, expected)
 		der = self.acalcDerivative(p)
 		integral = self.acalcIntegral(p)
@@ -172,14 +176,15 @@ class PID:
 		
 		self.prevError = p
 
-		out = p*5 + der * 5 + integral * 2
-
+		out = p*self.kp + der * self.kd + integral * self.ki
+		'''
 		if out > self.limMaxInt:
 			out = self.limMaxInt
 		elif out < self.limMinInt:
 			out = self.limMinInt
+		'''
 		return out
-
+		
 
 	def calcError(self, actual, expected):
 		return 1-(actual/expected)
