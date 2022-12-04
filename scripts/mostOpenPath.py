@@ -66,10 +66,10 @@ class mazeFinderState:
 	def __init__(self, name):
 		self.roboName = name
 		self.sensorDataObj = sensorData(self.roboName)
-		self.vertPID = PID(1,.001,.01)
-		self.horzPID = PID(1,.001,.01)
-		self.vertModifier = 5
-		self.horzModifier = -2
+		self.vertPID = PID(1,.001,.05) #1,.001,.05
+		self.horzPID = PID(1,.001,.01) #1,.001,.01
+		self.vertModifier = 10 #5 10
+		self.horzModifier = -3 #-2 -3
 
 	def calcOpenForce(self, num, theta):
 		rawHorz = math.sin(theta) * num
